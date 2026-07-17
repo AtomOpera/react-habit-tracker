@@ -1,45 +1,17 @@
 import { useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
 import type { SubmitEvent } from "react";
 import { Button } from "./Components/Button";
 import {startOfWeek, endOfWeek, eachDayOfInterval, format, isFuture, isSameDay, subDays} from "date-fns";
+import type { RootState, Habit } from "./store";
+import { addHabit, deleteHabit, toggleHabit } from "./store";
+
 export default function App() {
-  const [habits, setHabits] = useState<Habit[]>([
-    // { id: "1", name: "Exercise" }
-  ]);
-
-  function addHabit(name: string) {
-    const newHabit = {
-      id: crypto.randomUUID(),
-      name,
-      completions: []
-    };
-    setHabits((prevHabits) => [...prevHabits, newHabit]);
-  }
-
-  function deleteHabit(id: string) {
-    setHabits((prevHabits) => prevHabits.filter((habit) => habit.id !== id));
-  }
-
-  function toggleHabit(id: string, date: Date) {
-    setHabits((curr) =>
-      curr.map((h) => {
-        if (h.id === id) {
-          const isCompleted = h.completions.some((d) => isSameDay(d, date));
-          const newCompletions = isCompleted
-            ? h.completions.filter((d) => !isSameDay(d, date))
-            : [...h.completions, date];
-          return { ...h, completions: newCompletions };
-        }
-        return h;
-      })
-    );
-  }
-
   return (
     <div className="max-w-2xl mx-auto px-4 flex flex-col gap-4">
       <Header />
-      <HabitForm addHabit={addHabit} />
-      <HabitList habits={habits} deleteHabit={deleteHabit} toggleHabit={toggleHabit} />
+      <HabitForm />
+      <HabitList />
     </div>
   );
 }
@@ -62,17 +34,14 @@ function Header() {
   );
 }
 
-type HabitFormProps = {
-  addHabit: (name: string) => void;
-};
-
-function HabitForm({ addHabit }: HabitFormProps) {
+function HabitForm() {
   const [name, setName] = useState("");
+  const dispatch = useDispatch();
 
   function handleSubmit(e: SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
     if(name.trim() === "") return;
-    addHabit(name);
+    dispatch(addHabit(name));
     setName("");
   }
 
@@ -97,24 +66,9 @@ function HabitForm({ addHabit }: HabitFormProps) {
   );
 }
 
-type Habit = {
-  id: string;
-  name: string;
-  completions: Date[]; // Array of dates when the habit was completed
-};
+function HabitList() {
+  const habits = useSelector((state: RootState) => state.habits.items);
 
-type HabitsListProps = {
-  habits: Habit[];
-  deleteHabit: (id: string) => void;
-  toggleHabit: (id: string, date: Date) => void;
-};
-
-function HabitList( {habits, deleteHabit, toggleHabit}: HabitsListProps) {
-  // const habits = [
-  //   { id: "1", name: "Exercise" },
-  //   { id: "2", name: "Read" },
-  //   { id: "3", name: "Meditate" }
-  // ];
   if (habits.length === 0) {
     return (
       <p className="text-center text-zinc-500 py-12">
@@ -126,7 +80,7 @@ function HabitList( {habits, deleteHabit, toggleHabit}: HabitsListProps) {
   return (
     <ul className="flex flex-col gap-2">
       {habits.map((habit) => (
-        <HabitItem key={habit.id} habit={habit} deleteHabit={deleteHabit} toggleHabit={toggleHabit} />
+        <HabitItem key={habit.id} habit={habit} />
       ))}
     </ul>
   );
@@ -134,11 +88,10 @@ function HabitList( {habits, deleteHabit, toggleHabit}: HabitsListProps) {
 
 type HabitItemProps = {
   habit: Habit;
-  deleteHabit: (id: string) => void;
-  toggleHabit: (id: string, date: Date) => void;
 };
 
-function HabitItem({ habit, deleteHabit, toggleHabit }: HabitItemProps) {
+function HabitItem({ habit }: HabitItemProps) {
+  const dispatch = useDispatch();
   const visibleDates = eachDayOfInterval({
     start: startOfWeek(new Date(), { weekStartsOn: 1 }),
     end: endOfWeek(new Date(), { weekStartsOn: 1 })
@@ -156,7 +109,7 @@ function HabitItem({ habit, deleteHabit, toggleHabit }: HabitItemProps) {
             <span className="text-sm text-amber-400">🔥 {streak}</span>
           )}
         </div>
-        <Button variant="ghost-destructive" className="text-sm" onClick={() => deleteHabit(habit.id)}>Delete</Button>
+        <Button variant="ghost-destructive" className="text-sm" onClick={() => dispatch(deleteHabit(habit.id))}>Delete</Button>
       </div>
       {/* footer */}
       <div className="flex gap-1.5">
@@ -166,7 +119,7 @@ function HabitItem({ habit, deleteHabit, toggleHabit }: HabitItemProps) {
             key={date.toISOString()} 
             disabled={isFuture(date)}
             variant={habit.completions.some(d => isSameDay(d, date)) ? "primary" : "secondary"}
-            onClick={() => toggleHabit(habit.id, date)}
+            onClick={() => dispatch(toggleHabit({ id: habit.id, date }))}
           >
             <span className="font-medium">{format(date, "EEE")}</span>
             <span>{format(date, "d")}</span>

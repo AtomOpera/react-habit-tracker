@@ -26,9 +26,10 @@ export function Button({variant = "primary", className, ...props}: ButtonProps) 
     />
 }
 
-function getVariantStyles(variant: ButtonProps["variant"]) { // this could have been its own type, but we can use the ButtonProps type to get the variant type
+function getVariantStyles(variant: ButtonProps["variant"]) {
   switch (variant) {
     case "primary":
+    case undefined:
       return "bg-violet-600 hover:bg-violet-500";
     case "secondary":
       return "bg-zinc-700 hover:bg-zinc-600 text-zinc-400";
