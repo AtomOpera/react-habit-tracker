@@ -26,7 +26,9 @@ export function Button({variant = "primary", className, ...props}: ButtonProps) 
     />
 }
 
-function getVariantStyles(variant: ButtonProps["variant"]) { // this could have been its own type, but we can use the ButtonProps type to get the variant type
+type ButtonVariant = NonNullable<ButtonProps["variant"]>;
+
+function getVariantStyles(variant: ButtonVariant) {
   switch (variant) {
     case "primary":
       return "bg-violet-600 hover:bg-violet-500";
@@ -37,4 +39,4 @@ function getVariantStyles(variant: ButtonProps["variant"]) { // this could have 
     default:
       throw new Error(`Unknown variant: ${variant satisfies never}`);
   }
-}   
+}
